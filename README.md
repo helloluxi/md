@@ -26,9 +26,9 @@ The renderer never attaches link navigation or other host behavior. `baseUrl` on
 
 ## DOM contract
 
-The root receives `.note-renderer`. Generated classes are `.note-renderer-math`, `.note-renderer-math-error`, `.note-renderer-mermaid`, `.note-renderer-mermaid-diagram`, `.note-renderer-mermaid-error`, `.note-renderer-checkbox`, and `.note-renderer-copy`.
+The root receives `.note-renderer`. Generated classes are `.note-renderer-math`, `.note-renderer-math-error`, `.note-renderer-mermaid`, `.note-renderer-mermaid-diagram`, `.note-renderer-mermaid-error`, `.note-renderer-checkbox`, `.note-renderer-code-block`, `.note-renderer-code-block-toolbar`, `.note-renderer-code-block-language`, `.note-renderer-code-block-actions`, and `.note-renderer-copy`. Ordinary fenced code blocks are wrapped in a `.note-renderer-code-block` whose toolbar carries the uppercase language label plus a `.note-renderer-code-block-actions` group holding, unless `codeCopyButton` is false, the copy button; host actions such as a Bash Run button belong in that group, before the copy button.
 
-The supplied stylesheet includes KaTeX, its fonts, and the Prism Tomorrow token theme; it handles renderer-owned structure and exposes palette variables: `--note-renderer-background`, `--note-renderer-surface`, `--note-renderer-text`, `--note-renderer-muted`, `--note-renderer-accent`, `--note-renderer-copy-color`, `--note-renderer-error`, and `--note-renderer-font-family`.
+The supplied stylesheet includes KaTeX, its fonts, and the Prism Tomorrow token theme; it handles renderer-owned structure and exposes palette variables: `--note-renderer-background`, `--note-renderer-surface`, `--note-renderer-text`, `--note-renderer-muted`, `--note-renderer-accent`, `--note-renderer-border`, `--note-renderer-code-background`, `--note-renderer-code-toolbar`, `--note-renderer-error`, `--note-renderer-font-family`, and `--note-renderer-font-mono`.
 
 ## Consumer release flow
 

@@ -274,21 +274,129 @@ function renderMath(target: HTMLElement, macros?: KatexOptions["macros"]): void 
   });
 }
 
-function enableCopyButtons(target: HTMLElement): void {
-  target.querySelectorAll<HTMLPreElement>("pre").forEach(pre => {
-    if (pre.querySelector(".note-renderer-copy")) return;
-    const code = pre.querySelector("code");
-    if (!code || code.classList.contains("language-mermaid")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "note-renderer-copy";
-    button.textContent = "Copy";
-    button.addEventListener("click", async () => {
-      await navigator.clipboard?.writeText(code.textContent ?? "");
-      button.textContent = "Copied";
-      window.setTimeout(() => { button.textContent = "Copy"; }, 1000);
-    });
-    pre.append(button);
+const CODE_LANGUAGE_ALIASES: Record<string, string> = {
+  "c#": "csharp",
+  "c++": "cpp",
+  htm: "html",
+  js: "javascript",
+  md: "markdown",
+  objc: "objectivec",
+  py: "python",
+  rb: "ruby",
+  sh: "bash",
+  shell: "bash",
+  text: "none",
+  plaintext: "none",
+  txt: "none",
+  ts: "typescript",
+  yml: "yaml",
+};
+
+const CODE_LANGUAGE_LABELS: Record<string, string> = {
+  bash: "Bash",
+  c: "C",
+  cpp: "C++",
+  csharp: "C#",
+  css: "CSS",
+  html: "HTML",
+  java: "Java",
+  javascript: "JavaScript",
+  json: "JSON",
+  jsx: "JSX",
+  markdown: "Markdown",
+  markup: "Markup",
+  none: "Text",
+  objectivec: "Objective-C",
+  python: "Python",
+  ruby: "Ruby",
+  rust: "Rust",
+  sql: "SQL",
+  tsx: "TSX",
+  typescript: "TypeScript",
+  xml: "XML",
+  yaml: "YAML",
+};
+
+function normalizeCodeLanguage(language: string): string {
+  const value = language.trim().toLowerCase();
+  return /^[a-z0-9][a-z0-9#+.-]*$/.test(value) ? CODE_LANGUAGE_ALIASES[value] ?? value : "none";
+}
+
+function codeLanguageLabel(language: string): string {
+  return CODE_LANGUAGE_LABELS[language] ?? language.split("-").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Clipboard permission can be denied even in a secure context.
+    }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("copy failed");
+}
+
+function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): void {
+  target.querySelectorAll("pre > code").forEach(code => {
+    if (code.classList.contains("language-mermaid")) return;
+    const declaredClass = [...code.classList].find(name => name.startsWith("language-"));
+    const language = normalizeCodeLanguage(declaredClass ? declaredClass.slice("language-".length) : "");
+    for (const name of [...code.classList]) {
+      if (name.startsWith("language-")) code.classList.remove(name);
+    }
+    code.classList.add(`language-${language}`);
+    const pre = code.parentElement;
+    if (!(pre instanceof HTMLPreElement)) return;
+    pre.classList.add(`language-${language}`);
+    pre.tabIndex = 0;
+    const block = document.createElement("div");
+    block.className = "note-renderer-code-block";
+    const toolbar = document.createElement("div");
+    toolbar.className = "note-renderer-code-block-toolbar";
+    const label = document.createElement("span");
+    label.className = "note-renderer-code-block-language";
+    label.textContent = codeLanguageLabel(language);
+    const actions = document.createElement("span");
+    actions.className = "note-renderer-code-block-actions";
+    if (copyButton) {
+      const source = code.textContent ?? "";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "note-renderer-copy";
+      button.textContent = "Copy";
+      button.setAttribute("aria-label", `Copy ${label.textContent} code`);
+      button.setAttribute("aria-live", "polite");
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+          await copyText(source);
+          button.textContent = "Copied";
+        } catch {
+          button.textContent = "Copy failed";
+        }
+        window.setTimeout(() => { button.textContent = "Copy"; button.disabled = false; }, 1200);
+      });
+      actions.append(button);
+    }
+    toolbar.append(label, actions);
+    const lineStart = pre.getAttribute("data-source-line-start");
+    if (lineStart !== null) {
+      block.setAttribute("data-source-line-start", lineStart);
+      block.setAttribute("data-source-line-end", pre.getAttribute("data-source-line-end") ?? "");
+    }
+    pre.before(block);
+    block.append(toolbar, pre);
   });
 }
 
@@ -370,7 +478,7 @@ export async function renderMarkdown(markdown: string, target: HTMLElement, opti
   configureUrls(target, headingIdPrefix, options.baseUrl);
   restoreCheckboxes(target);
   renderMath(target, options.katexMacros);
-  if (options.codeCopyButton ?? true) enableCopyButtons(target);
+  enhanceCodeBlocks(target, options.codeCopyButton ?? true);
   const mermaidBlocks = await renderMermaid(target, options.theme ?? "auto");
   Prism.highlightAllUnder(target);
   return { sourceLineNodes, mermaidBlocks };
