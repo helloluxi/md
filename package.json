@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsup && cp src/style.css dist/style.css && cp node_modules/katex/dist/katex.min.css dist/katex.min.css && cp node_modules/prismjs/themes/prism-tomorrow.css dist/prism-tomorrow.css && mkdir -p dist/fonts && cp -R node_modules/katex/dist/fonts/. dist/fonts",
     "check": "tsc --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "dompurify": "^3.4.12",
