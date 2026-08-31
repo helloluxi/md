@@ -1,0 +1,43 @@
+{
+  "name": "note-renderer",
+  "version": "0.1.0",
+  "description": "A safe, browser-native Markdown renderer for shared note applications.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./global": "./dist/note-renderer.global.js",
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup && cp src/style.css dist/style.css && cp node_modules/katex/dist/katex.min.css dist/katex.min.css && cp node_modules/prismjs/themes/prism-tomorrow.css dist/prism-tomorrow.css && mkdir -p dist/fonts && cp -R node_modules/katex/dist/fonts/. dist/fonts",
+    "check": "tsc --noEmit",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.12",
+    "katex": "^0.18.1",
+    "marked": "^18.0.7",
+    "marked-alert": "^2.1.2",
+    "marked-footnote": "^1.4.0",
+    "marked-gfm-heading-id": "^4.1.4",
+    "mermaid": "^11.16.1",
+    "prismjs": "^1.30.0"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/prismjs": "^1.26.5",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
