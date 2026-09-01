@@ -1,6 +1,6 @@
 {
   "name": "note-renderer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A safe, browser-native Markdown renderer for shared note applications.",
   "type": "module",
   "exports": {
