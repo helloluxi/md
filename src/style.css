@@ -1,9 +1,102 @@
 @import "./katex.min.css";
 @import "./prism-tomorrow.css";
 
-.note-renderer .note-renderer-math-error { color: var(--note-renderer-error, #cf222e); }
+.note-renderer {
+  color: var(--note-renderer-text, inherit);
+  font-family: var(--note-renderer-font-family, inherit);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.note-renderer > :first-child { margin-top: 0; }
+.note-renderer > :last-child { margin-bottom: 0; }
+.note-renderer :is(h1, h2, h3) { margin: 1.1em 0 0.45em; line-height: 1.25; letter-spacing: -0.015em; }
+.note-renderer h1 { color: var(--note-renderer-accent, #0969da); font-size: 1.45em; }
+.note-renderer h2 { color: color-mix(in srgb, var(--note-renderer-accent, #0969da) 88%, var(--note-renderer-text, currentColor)); font-size: 1.25em; }
+.note-renderer h3 { color: color-mix(in srgb, var(--note-renderer-accent, #0969da) 72%, var(--note-renderer-text, currentColor)); font-size: 1.08em; }
+.note-renderer :is(h4, h5, h6) { margin: 1em 0 0.4em; line-height: 1.3; }
+.note-renderer :is(h1, h2, h3, h4, h5, h6):target { text-decoration: underline; text-decoration-color: var(--note-renderer-accent, #0969da); }
+.note-renderer :is(p, ul, ol, pre, blockquote) { margin: 0.65em 0; }
+.note-renderer a { color: var(--note-renderer-accent, #0969da); }
+.note-renderer strong { color: color-mix(in srgb, var(--note-renderer-accent, #0969da) 90%, var(--note-renderer-text, currentColor)); }
+.note-renderer code {
+  padding: 0.14em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--note-renderer-text, currentColor) 10%, transparent);
+  color: color-mix(in srgb, var(--note-renderer-error, #cf222e) 78%, var(--note-renderer-text, currentColor));
+  font: 0.9em/1.45 var(--note-renderer-font-mono, 'Menlo', 'Monaco', 'Ubuntu Mono', monospace);
+}
+.note-renderer pre {
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px !important;
+  border: 1px solid var(--note-renderer-border, #d0d7de);
+  border-radius: 8px;
+  background: var(--note-renderer-code-background, #101318) !important;
+}
+.note-renderer pre code { padding: 0; background: transparent; }
+.note-renderer blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--note-renderer-accent, #0969da);
+  color: var(--note-renderer-muted, #57606a);
+}
+.note-renderer img { max-width: 100%; height: auto; }
+.note-renderer .markdown-alert {
+  --alert-color: var(--note-renderer-accent, #0969da);
+  margin: 0.8em 0;
+  padding: 9px 12px;
+  border-left: 4px solid var(--alert-color);
+  border-radius: 0 7px 7px 0;
+  background: color-mix(in srgb, var(--alert-color), transparent 91%);
+}
+.note-renderer .markdown-alert-tip { --alert-color: var(--note-renderer-success, #1a7f37); }
+.note-renderer .markdown-alert-important { --alert-color: var(--note-renderer-important, #8250df); }
+.note-renderer .markdown-alert-warning { --alert-color: var(--note-renderer-warning, #9a6700); }
+.note-renderer .markdown-alert-caution { --alert-color: var(--note-renderer-error, #cf222e); }
+.note-renderer .markdown-alert-title { margin: 0 0 0.25em; color: var(--alert-color); font-weight: 750; }
+.note-renderer .markdown-alert-title::before { content: "ⓘ"; margin-right: 0.45em; }
+.note-renderer .markdown-alert-tip .markdown-alert-title::before { content: "✓"; }
+.note-renderer .markdown-alert-important .markdown-alert-title::before { content: "◆"; }
+.note-renderer .markdown-alert-warning .markdown-alert-title::before { content: "▲"; }
+.note-renderer .markdown-alert-caution .markdown-alert-title::before { content: "!"; }
+.note-renderer .markdown-alert > :last-child { margin-bottom: 0; }
 .note-renderer .contains-task-list { list-style: none; padding-left: 0; }
-.note-renderer .task-list-item > input[type="checkbox"] { margin-right: 0.5em; }
+.note-renderer .task-list-item { list-style: none; }
+.note-renderer .task-list-item > input[type="checkbox"] {
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.45em 0 -1.3em;
+  accent-color: var(--note-renderer-accent, #0969da);
+  vertical-align: -0.08em;
+  opacity: 1;
+}
+.note-renderer .footnotes { margin-top: 1.4em; border-top: 1px solid var(--note-renderer-border, #d0d7de); color: var(--note-renderer-muted, #57606a); font-size: 0.88em; }
+.note-renderer .footnotes ol { padding-left: 1.7em; }
+.note-renderer .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.note-renderer details {
+  margin: 0.75em 0;
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--note-renderer-border, #d0d7de);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--note-renderer-surface, #f6f8fa), transparent 18%);
+}
+.note-renderer summary { color: var(--note-renderer-text, inherit); cursor: pointer; font-weight: 650; }
+.note-renderer details[open] > summary { margin-bottom: 0.5em; }
+.note-renderer table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; }
+.note-renderer :is(th, td) { padding: 6px 9px; border: 1px solid var(--note-renderer-border, #d0d7de); }
+.note-renderer th { background: var(--note-renderer-surface, #f6f8fa); color: var(--note-renderer-text, inherit); }
+.note-renderer .katex { color: var(--note-renderer-accent, #0969da); }
+.note-renderer .note-renderer-math { overflow-x: auto; }
+.note-renderer .note-renderer-math[data-display="true"] { margin: 0.8em 0; text-align: center; }
+.note-renderer .note-renderer-math-error { color: var(--note-renderer-error, #cf222e); font-family: var(--note-renderer-font-mono, 'Menlo', 'Monaco', 'Ubuntu Mono', monospace); }
 .note-renderer .note-renderer-code-block { margin: 0.75em 0; overflow: hidden; border: 1px solid var(--note-renderer-border, #2d343d); border-radius: 8px; background: var(--note-renderer-code-background, #101318); }
 .note-renderer .note-renderer-code-block-toolbar { display: flex; min-height: 34px; align-items: center; justify-content: space-between; padding: 5px 7px 5px 12px; border-bottom: 1px solid var(--note-renderer-border, #2d343d); background: var(--note-renderer-code-toolbar, #171b21); user-select: none; -webkit-user-select: none; }
 .note-renderer .note-renderer-code-block-language { color: var(--note-renderer-muted, #8a939d); font: 700 10px/1 var(--note-renderer-font-mono, 'Menlo', 'Monaco', 'Ubuntu Mono', monospace); letter-spacing: 0.08em; text-transform: uppercase; }

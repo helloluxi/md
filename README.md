@@ -2,9 +2,9 @@
 
 `note-renderer` is the shared browser Markdown module for `lu` and `lutex`.
 
-It owns the canonical GFM dialect, GFM heading ids, alerts, footnotes, dollar and GitHub math, KaTeX rendering, Mermaid rendering in strict mode, Prism syntax highlighting, HTML sanitization, relative URL resolution, and the common DOM/CSS contract.
+It owns the canonical GFM dialect, GFM heading ids, alerts, footnotes, dollar and GitHub math, KaTeX rendering, Mermaid rendering in strict mode, Prism syntax highlighting, HTML sanitization, relative URL resolution, and the common DOM/CSS contract. Its stylesheet supplies the shared prose presentation and structural safeguards, including bounded images and horizontally scrollable wide content.
 
-It deliberately does not own application behavior: goal-variable substitution, Bash actions, file jumps, persistent diagram controls, Neovim navigation, outlines, image UI, and live reload remain host adapters.
+It deliberately does not own application behavior: goal-variable substitution, Bash actions, file jumps, persistent diagram controls, Neovim navigation, outlines, interactive image controls, and live reload remain host adapters.
 
 ## Use
 
@@ -28,7 +28,7 @@ The renderer never attaches link navigation or other host behavior. `baseUrl` on
 
 The root receives `.note-renderer`. Generated classes are `.note-renderer-math`, `.note-renderer-math-error`, `.note-renderer-mermaid`, `.note-renderer-mermaid-diagram`, `.note-renderer-mermaid-error`, `.note-renderer-checkbox`, `.note-renderer-code-block`, `.note-renderer-code-block-toolbar`, `.note-renderer-code-block-language`, `.note-renderer-code-block-actions`, and `.note-renderer-copy`. Ordinary fenced code blocks are wrapped in a `.note-renderer-code-block` whose toolbar carries the uppercase language label plus a `.note-renderer-code-block-actions` group holding, unless `codeCopyButton` is false, the copy button; host actions such as a Bash Run button belong in that group, before the copy button.
 
-The supplied stylesheet includes KaTeX, its fonts, and the Prism Tomorrow token theme; it handles renderer-owned structure and exposes palette variables: `--note-renderer-background`, `--note-renderer-surface`, `--note-renderer-text`, `--note-renderer-muted`, `--note-renderer-accent`, `--note-renderer-border`, `--note-renderer-code-background`, `--note-renderer-code-toolbar`, `--note-renderer-error`, `--note-renderer-font-family`, and `--note-renderer-font-mono`.
+The supplied stylesheet includes KaTeX, its fonts, and the Prism Tomorrow token theme. It handles canonical prose, responsive images, renderer-owned structure, and wide-content overflow. Hosts customize that presentation through `--note-renderer-background`, `--note-renderer-surface`, `--note-renderer-text`, `--note-renderer-muted`, `--note-renderer-accent`, `--note-renderer-success`, `--note-renderer-important`, `--note-renderer-warning`, `--note-renderer-border`, `--note-renderer-code-background`, `--note-renderer-code-toolbar`, `--note-renderer-error`, `--note-renderer-font-family`, and `--note-renderer-font-mono`.
 
 ## Consumer release flow
 
