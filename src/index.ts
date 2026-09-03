@@ -20,6 +20,19 @@ type SourceToken = Token & {
 
 export type SourceLines = false | "zero-based" | "one-based";
 
+export interface CodeBlockToolbarContext {
+  /** Zero-based position among rendered code blocks in this render. */
+  index: number;
+  /** Normalized language name, so aliases such as `sh` are reported as `bash`. */
+  language: string;
+  /** Code source captured before highlighting or rendering. */
+  source: string;
+  /** Renderer-owned wrapper containing the toolbar and rendered content. */
+  block: HTMLElement;
+  /** The `pre` element, or the Mermaid holder after diagram rendering. */
+  content: HTMLElement;
+}
+
 export interface RenderOptions {
   /** Adds source positions to rendered block, list-item, and table-row elements. */
   sourceLines?: SourceLines;
@@ -31,8 +44,10 @@ export interface RenderOptions {
   katexMacros?: KatexOptions["macros"];
   /** The Mermaid palette is derived from these CSS variables when present. */
   theme?: "light" | "dark" | "auto";
-  /** Shows copy buttons for ordinary fenced code blocks. Defaults to true. */
+  /** Shows copy buttons for rendered code blocks. Defaults to true. */
   codeCopyButton?: boolean;
+  /** Supplies host-owned buttons for the right side of each code-block toolbar. */
+  codeBlockToolbarButtons?: (context: CodeBlockToolbarContext) => readonly HTMLButtonElement[];
 }
 
 export interface RenderResult {
@@ -221,7 +236,6 @@ function createParser(capture: (tokens: SourceToken[]) => void, headingIdPrefix:
       code({ text, lang }) {
         const language = String(lang ?? "").trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
         if (language === "math") return `${mathPlaceholder(text, true)}\n`;
-        if (language === "mermaid") return `<div class="note-renderer-mermaid"><pre><code class="language-mermaid">${escapeHtml(text)}</code></pre></div>`;
         return `<pre><code class="language-${escapeHtml(language)}">${escapeHtml(text)}</code></pre>`;
       },
     },
@@ -326,6 +340,8 @@ function codeLanguageLabel(language: string): string {
   return CODE_LANGUAGE_LABELS[language] ?? language.split("-").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
+type EnhancedCodeBlock = CodeBlockToolbarContext & { actions: HTMLElement };
+
 async function copyText(text: string): Promise<void> {
   if (navigator.clipboard && window.isSecureContext) {
     try {
@@ -346,9 +362,9 @@ async function copyText(text: string): Promise<void> {
   if (!copied) throw new Error("copy failed");
 }
 
-function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): void {
+function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): EnhancedCodeBlock[] {
+  const blocks: EnhancedCodeBlock[] = [];
   target.querySelectorAll("pre > code").forEach(code => {
-    if (code.classList.contains("language-mermaid")) return;
     const declaredClass = [...code.classList].find(name => name.startsWith("language-"));
     const language = normalizeCodeLanguage(declaredClass ? declaredClass.slice("language-".length) : "");
     for (const name of [...code.classList]) {
@@ -361,6 +377,7 @@ function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): void {
     pre.tabIndex = 0;
     const block = document.createElement("div");
     block.className = "note-renderer-code-block";
+    block.dataset.language = language;
     const toolbar = document.createElement("div");
     toolbar.className = "note-renderer-code-block-toolbar";
     const label = document.createElement("span");
@@ -372,7 +389,7 @@ function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): void {
       const source = code.textContent ?? "";
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "note-renderer-copy";
+      button.className = "note-renderer-code-block-action note-renderer-copy";
       button.textContent = "Copy";
       button.setAttribute("aria-label", `Copy ${label.textContent} code`);
       button.setAttribute("aria-live", "polite");
@@ -397,7 +414,23 @@ function enhanceCodeBlocks(target: HTMLElement, copyButton: boolean): void {
     }
     pre.before(block);
     block.append(toolbar, pre);
+    blocks.push({ index: blocks.length, language, source: code.textContent ?? "", block, content: pre, actions });
   });
+  return blocks;
+}
+
+function addCodeBlockToolbarButtons(
+  blocks: EnhancedCodeBlock[],
+  createButtons?: RenderOptions["codeBlockToolbarButtons"],
+): void {
+  if (!createButtons) return;
+  for (const context of blocks) {
+    const copy = context.actions.querySelector(".note-renderer-copy");
+    for (const button of createButtons(context)) {
+      button.classList.add("note-renderer-code-block-action");
+      context.actions.insertBefore(button, copy);
+    }
+  }
 }
 
 function themeValue(name: string, fallback: string): string {
@@ -437,14 +470,19 @@ function configureMermaid(theme: NonNullable<RenderOptions["theme"]>): void {
   });
 }
 
-async function renderMermaid(target: HTMLElement, theme: NonNullable<RenderOptions["theme"]>): Promise<number> {
-  const holders = Array.from(target.querySelectorAll<HTMLElement>(".note-renderer-mermaid"));
-  if (holders.length === 0) return 0;
+async function renderMermaid(blocks: EnhancedCodeBlock[], theme: NonNullable<RenderOptions["theme"]>): Promise<number> {
+  const mermaidBlocks = blocks.filter(block => block.language === "mermaid");
+  if (mermaidBlocks.length === 0) return 0;
   configureMermaid(theme);
-  for (const [index, holder] of holders.entries()) {
-    const source = holder.textContent ?? "";
+  for (const [index, context] of mermaidBlocks.entries()) {
+    const pre = context.content;
+    const holder = document.createElement("div");
+    holder.className = "note-renderer-mermaid";
+    pre.before(holder);
+    holder.append(pre);
+    context.content = holder;
     try {
-      const { svg, bindFunctions } = await mermaid.render(`note-renderer-mermaid-${crypto.randomUUID()}-${index}`, source);
+      const { svg, bindFunctions } = await mermaid.render(`note-renderer-mermaid-${crypto.randomUUID()}-${index}`, context.source);
       const diagram = document.createElement("div");
       diagram.className = "note-renderer-mermaid-diagram";
       diagram.setAttribute("role", "img");
@@ -457,7 +495,7 @@ async function renderMermaid(target: HTMLElement, theme: NonNullable<RenderOptio
       Prism.highlightAllUnder(holder);
     }
   }
-  return holders.length;
+  return mermaidBlocks.length;
 }
 
 /** Renders canonical note Markdown into an existing browser element. */
@@ -478,8 +516,9 @@ export async function renderMarkdown(markdown: string, target: HTMLElement, opti
   configureUrls(target, headingIdPrefix, options.baseUrl);
   restoreCheckboxes(target);
   renderMath(target, options.katexMacros);
-  enhanceCodeBlocks(target, options.codeCopyButton ?? true);
-  const mermaidBlocks = await renderMermaid(target, options.theme ?? "auto");
+  const codeBlocks = enhanceCodeBlocks(target, options.codeCopyButton ?? true);
+  const mermaidBlocks = await renderMermaid(codeBlocks, options.theme ?? "auto");
   Prism.highlightAllUnder(target);
+  addCodeBlockToolbarButtons(codeBlocks, options.codeBlockToolbarButtons);
   return { sourceLineNodes, mermaidBlocks };
 }

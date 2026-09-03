@@ -17,16 +17,24 @@ await renderMarkdown(markdown, element, {
   headingIdPrefix: "note-42-",
   baseUrl: new URL("https://notes.example/dir/"),
   katexMacros: { "\\RR": "\\mathbb{R}" },
+  codeBlockToolbarButtons: ({ language, source }) => {
+    if (language !== "bash") return [];
+    const run = document.createElement("button");
+    run.type = "button";
+    run.textContent = "Run";
+    run.addEventListener("click", () => runShell(source));
+    return [run];
+  },
 });
 ```
 
 `sourceLines` is disabled by default. When enabled, block elements receive `data-source-line-start` and `data-source-line-end`; lists additionally mark each `li`, and tables mark each body row. Use `"zero-based"` for direct source-array indexing or `"one-based"` for editor-facing line numbers. Heading ids receive a unique render prefix by default, and local heading links are rewritten to match it; pass `headingIdPrefix` when a host needs a stable id namespace.
 
-The renderer never attaches link navigation or other host behavior. `baseUrl` only resolves relative `href` and `src` values after sanitization.
+The renderer never attaches link navigation or other host behavior. `baseUrl` only resolves relative `href` and `src` values after sanitization. `codeBlockToolbarButtons` is called after code and Mermaid rendering for every rendered code block. It receives the normalized `language`, original `source`, zero-based code-block `index`, renderer-owned `block`, and current `content` (`pre` for ordinary code or the Mermaid holder). Returned buttons are styled uniformly, inserted at the top right, and placed before the optional Copy button.
 
 ## DOM contract
 
-The root receives `.note-renderer`. Generated classes are `.note-renderer-math`, `.note-renderer-math-error`, `.note-renderer-mermaid`, `.note-renderer-mermaid-diagram`, `.note-renderer-mermaid-error`, `.note-renderer-checkbox`, `.note-renderer-code-block`, `.note-renderer-code-block-toolbar`, `.note-renderer-code-block-language`, `.note-renderer-code-block-actions`, and `.note-renderer-copy`. Ordinary fenced code blocks are wrapped in a `.note-renderer-code-block` whose toolbar carries the uppercase language label plus a `.note-renderer-code-block-actions` group holding, unless `codeCopyButton` is false, the copy button; host actions such as a Bash Run button belong in that group, before the copy button.
+The root receives `.note-renderer`. Generated classes are `.note-renderer-math`, `.note-renderer-math-error`, `.note-renderer-mermaid`, `.note-renderer-mermaid-diagram`, `.note-renderer-mermaid-error`, `.note-renderer-checkbox`, `.note-renderer-code-block`, `.note-renderer-code-block-toolbar`, `.note-renderer-code-block-language`, `.note-renderer-code-block-actions`, `.note-renderer-code-block-action`, and `.note-renderer-copy`. Every rendered code block, including Mermaid, is wrapped in a `.note-renderer-code-block`; its toolbar carries the uppercase language label and a `.note-renderer-code-block-actions` group. Host buttons and, unless `codeCopyButton` is false, the Copy button share the same action presentation.
 
 The supplied stylesheet includes KaTeX, its fonts, and the Prism Tomorrow token theme. It handles canonical prose, responsive images, renderer-owned structure, and wide-content overflow. Hosts customize that presentation through `--note-renderer-background`, `--note-renderer-surface`, `--note-renderer-text`, `--note-renderer-muted`, `--note-renderer-accent`, `--note-renderer-success`, `--note-renderer-important`, `--note-renderer-warning`, `--note-renderer-border`, `--note-renderer-code-background`, `--note-renderer-code-toolbar`, `--note-renderer-error`, `--note-renderer-font-family`, and `--note-renderer-font-mono`.
 
