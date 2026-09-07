@@ -453,13 +453,18 @@ function mermaidIsDark(theme: NonNullable<RenderOptions["theme"]>): boolean {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
-function configureMermaid(theme: NonNullable<RenderOptions["theme"]>): void {
+function mermaidIsTopDownFlowchart(source: string): boolean {
+  return /^[ \t]*(?:flowchart|graph)[ \t]+(?:TD|TB)\b/im.test(source);
+}
+
+function configureMermaid(theme: NonNullable<RenderOptions["theme"]>, source: string): void {
   const dark = mermaidIsDark(theme);
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: "strict",
     theme: "base",
     darkMode: dark,
+    ...(mermaidIsTopDownFlowchart(source) ? { flowchart: { rankSpacing: 24 } } : {}),
     themeVariables: {
       background: themeValue("--note-renderer-background", dark ? "#0d1117" : "#ffffff"),
       primaryColor: themeValue("--note-renderer-surface", dark ? "#161b22" : "#f6f8fa"),
@@ -473,8 +478,8 @@ function configureMermaid(theme: NonNullable<RenderOptions["theme"]>): void {
 async function renderMermaid(blocks: EnhancedCodeBlock[], theme: NonNullable<RenderOptions["theme"]>): Promise<number> {
   const mermaidBlocks = blocks.filter(block => block.language === "mermaid");
   if (mermaidBlocks.length === 0) return 0;
-  configureMermaid(theme);
   for (const [index, context] of mermaidBlocks.entries()) {
+    configureMermaid(theme, context.source);
     const pre = context.content;
     const holder = document.createElement("div");
     holder.className = "note-renderer-mermaid";
