@@ -57,7 +57,7 @@ export interface RenderResult {
   mermaidBlocks: number;
 }
 
-const INLINE_DOLLAR_MATH = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\1(?=[\s?!.,:？！。，：]|$)/;
+const INLINE_DOLLAR_MATH = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\1(?=[\s\p{P}]|$)/u;
 const BLOCK_DOLLAR_MATH = /^(\${1,2})\n((?:\\[^]|[^\\])+?)\n\1(?:\n|$)/;
 const INLINE_BACKSLASH_MATH = /^\\\(([^\n]+?)\\\)/;
 const BLOCK_BACKSLASH_MATH = /^\\\[\n?((?:\\[^]|[^\\])+?)\n?\\\](?:\n|$)/;
@@ -72,6 +72,12 @@ function mathPlaceholder(text: string, display: boolean): string {
   return `<${tag} class="note-renderer-math" data-display="${display}">${escapeHtml(text)}</${tag}>`;
 }
 
+function isEscaped(source: string, offset: number): boolean {
+  let backslashes = 0;
+  while (source[offset - backslashes - 1] === "\\") backslashes += 1;
+  return backslashes % 2 === 1;
+}
+
 function mathExtensions() {
   return {
     extensions: [
@@ -80,7 +86,7 @@ function mathExtensions() {
         level: "inline" as const,
         start(source: string) {
           for (let offset = source.indexOf("$"); offset >= 0; offset = source.indexOf("$", offset + 1)) {
-            if ((offset === 0 || /\s/.test(source[offset - 1]!)) && INLINE_DOLLAR_MATH.test(source.slice(offset))) return offset;
+            if (!isEscaped(source, offset) && INLINE_DOLLAR_MATH.test(source.slice(offset))) return offset;
           }
           return undefined;
         },
