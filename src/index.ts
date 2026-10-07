@@ -62,6 +62,7 @@ const BLOCK_DOLLAR_MATH = /^(\${1,2})\n((?:\\[^]|[^\\])+?)\n\1(?:\n|$)/;
 const INLINE_BACKSLASH_MATH = /^\\\(([^\n]+?)\\\)/;
 const BLOCK_BACKSLASH_MATH = /^\\\[\n?((?:\\[^]|[^\\])+?)\n?\\\](?:\n|$)/;
 let renderSequence = 0;
+let mermaidSequence = 0;
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -493,7 +494,7 @@ async function renderMermaid(blocks: EnhancedCodeBlock[], theme: NonNullable<Ren
     holder.append(pre);
     context.content = holder;
     try {
-      const { svg, bindFunctions } = await mermaid.render(`note-renderer-mermaid-${crypto.randomUUID()}-${index}`, context.source);
+      const { svg, bindFunctions } = await mermaid.render(`note-renderer-mermaid-${++mermaidSequence}-${index}`, context.source);
       const diagram = document.createElement("div");
       diagram.className = "note-renderer-mermaid-diagram";
       diagram.setAttribute("role", "img");
