@@ -79,6 +79,13 @@ function isEscaped(source: string, offset: number): boolean {
   return backslashes % 2 === 1;
 }
 
+function lineStartMathOffset(source: string, delimiter: string, pattern: RegExp): number | undefined {
+  for (let offset = source.indexOf(delimiter); offset >= 0; offset = source.indexOf(delimiter, offset + 1)) {
+    if ((offset === 0 || source[offset - 1] === "\n") && pattern.test(source.slice(offset))) return offset;
+  }
+  return undefined;
+}
+
 function mathExtensions() {
   return {
     extensions: [
@@ -102,6 +109,9 @@ function mathExtensions() {
       {
         name: "noteRendererBlockDollarMath",
         level: "block" as const,
+        start(source: string) {
+          return lineStartMathOffset(source, "$", BLOCK_DOLLAR_MATH);
+        },
         tokenizer(source: string) {
           const match = BLOCK_DOLLAR_MATH.exec(source);
           return match ? { type: "noteRendererBlockDollarMath", raw: match[0], text: match[2].trim(), display: match[1].length === 2 } : undefined;
@@ -128,6 +138,9 @@ function mathExtensions() {
       {
         name: "noteRendererBlockBackslashMath",
         level: "block" as const,
+        start(source: string) {
+          return lineStartMathOffset(source, "\\[", BLOCK_BACKSLASH_MATH);
+        },
         tokenizer(source: string) {
           const match = BLOCK_BACKSLASH_MATH.exec(source);
           return match ? { type: "noteRendererBlockBackslashMath", raw: match[0], text: match[1].trim(), display: true } : undefined;
