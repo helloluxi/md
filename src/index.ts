@@ -523,6 +523,11 @@ async function renderMermaid(blocks: EnhancedCodeBlock[], theme: NonNullable<Ren
   return mermaidBlocks.length;
 }
 
+// DOMPurify's default URI allowlist, plus `name.ext:12` file-and-line
+// references such as `app.js:12` or `justfile:3:5`, which it would otherwise
+// strip as an unknown scheme. Script schemes stay excluded.
+const SAFE_URI = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$)|(?!(?:java|vb)script:|data:)[\w.-]+:\d+(?:[:-]\d+)*(?:#[\w-]*)?$)/i;
+
 /** Renders canonical note Markdown into an existing browser element. */
 export async function renderMarkdown(markdown: string, target: HTMLElement, options: RenderOptions = {}): Promise<RenderResult> {
   const sourceLines = options.sourceLines ?? false;
@@ -536,6 +541,7 @@ export async function renderMarkdown(markdown: string, target: HTMLElement, opti
     FORBID_TAGS: ["style", "iframe", "object", "embed", "form", "fieldset", "legend", "label", "input", "button", "textarea", "select", "option", "optgroup", "datalist", "output", "svg", "math"],
     FORBID_ATTR: ["style", "srcdoc"],
     ADD_TAGS: ["details", "summary"],
+    ALLOWED_URI_REGEXP: SAFE_URI,
   });
   const sourceLineNodes = applySourceLines(target, tokens, sourceLines);
   configureUrls(target, headingIdPrefix, options.baseUrl);
