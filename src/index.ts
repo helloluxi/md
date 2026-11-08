@@ -33,6 +33,15 @@ export interface CodeBlockToolbarContext {
   content: HTMLElement;
 }
 
+export interface ResourceRenderContext<T extends HTMLAnchorElement | HTMLImageElement> {
+  /** Sanitized element, before host customization. */
+  element: T;
+  /** Sanitized destination as authored, before baseUrl resolution. */
+  destination: string;
+  /** Destination after the renderer's optional baseUrl resolution. */
+  resolvedDestination: string;
+}
+
 export interface RenderOptions {
   /** Adds source positions to rendered block, list-item, and table-row elements. */
   sourceLines?: SourceLines;
@@ -48,6 +57,10 @@ export interface RenderOptions {
   codeCopyButton?: boolean;
   /** Supplies host-owned buttons for the right side of each code-block toolbar. */
   codeBlockToolbarButtons?: (context: CodeBlockToolbarContext) => readonly HTMLButtonElement[];
+  /** Trusted host customization after sanitization. Return a replacement or mutate the element. */
+  renderLink?: (context: ResourceRenderContext<HTMLAnchorElement>) => Node | void;
+  /** Trusted host customization; the default remains an ordinary Markdown image. */
+  renderImage?: (context: ResourceRenderContext<HTMLImageElement>) => Node | void;
 }
 
 export interface RenderResult {
@@ -544,7 +557,17 @@ export async function renderMarkdown(markdown: string, target: HTMLElement, opti
     ALLOWED_URI_REGEXP: SAFE_URI,
   });
   const sourceLineNodes = applySourceLines(target, tokens, sourceLines);
+  const resources = Array.from(target.querySelectorAll<HTMLAnchorElement | HTMLImageElement>('a[href], img[src]'), element => ({
+    element, destination: element.getAttribute(element.tagName === 'A' ? 'href' : 'src') || '',
+  }));
   configureUrls(target, headingIdPrefix, options.baseUrl);
+  for (const { element, destination } of resources) {
+    if (!target.contains(element)) continue;
+    const replacement = element.tagName === 'A'
+      ? options.renderLink?.({ element: element as HTMLAnchorElement, destination, resolvedDestination: element.getAttribute('href') || '' })
+      : options.renderImage?.({ element: element as HTMLImageElement, destination, resolvedDestination: element.getAttribute('src') || '' });
+    if (replacement && replacement !== element) element.replaceWith(replacement);
+  }
   restoreCheckboxes(target);
   renderMath(target, options.katexMacros);
   const codeBlocks = enhanceCodeBlocks(target, options.codeCopyButton ?? true);
