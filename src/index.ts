@@ -71,6 +71,9 @@ export interface RenderResult {
 }
 
 const INLINE_DOLLAR_MATH = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\1(?=[\s\p{P}]|$)/u;
+// A display delimiter may share its line with TeX. Stop at the first
+// unescaped pair so adjacent formulas remain separate Markdown tokens.
+const DISPLAY_DOLLAR_MATH = /^(\$\$)(?!\$)((?:\\[^]|[^\\$\n]|\$(?!\$)|\n(?![ \t]*\n))+?)\$\$[ \t]*(?:\n|$)/;
 const BLOCK_DOLLAR_MATH = /^(\${1,2})\n((?:\\[^]|[^\\])+?)\n\1(?:\n|$)/;
 const INLINE_BACKSLASH_MATH = /^\\\(([^\n]+?)\\\)/;
 const BLOCK_BACKSLASH_MATH = /^\\\[\n?((?:\\[^]|[^\\])+?)\n?\\\](?:\n|$)/;
@@ -92,9 +95,9 @@ function isEscaped(source: string, offset: number): boolean {
   return backslashes % 2 === 1;
 }
 
-function lineStartMathOffset(source: string, delimiter: string, pattern: RegExp): number | undefined {
+function lineStartMathOffset(source: string, delimiter: string, ...patterns: RegExp[]): number | undefined {
   for (let offset = source.indexOf(delimiter); offset >= 0; offset = source.indexOf(delimiter, offset + 1)) {
-    if ((offset === 0 || source[offset - 1] === "\n") && pattern.test(source.slice(offset))) return offset;
+    if ((offset === 0 || source[offset - 1] === "\n") && patterns.some(pattern => pattern.test(source.slice(offset)))) return offset;
   }
   return undefined;
 }
@@ -123,10 +126,10 @@ function mathExtensions() {
         name: "noteRendererBlockDollarMath",
         level: "block" as const,
         start(source: string) {
-          return lineStartMathOffset(source, "$", BLOCK_DOLLAR_MATH);
+          return lineStartMathOffset(source, "$", DISPLAY_DOLLAR_MATH, BLOCK_DOLLAR_MATH);
         },
         tokenizer(source: string) {
-          const match = BLOCK_DOLLAR_MATH.exec(source);
+          const match = DISPLAY_DOLLAR_MATH.exec(source) ?? BLOCK_DOLLAR_MATH.exec(source);
           return match ? { type: "noteRendererBlockDollarMath", raw: match[0], text: match[2].trim(), display: match[1].length === 2 } : undefined;
         },
         renderer(token: { text: string; display: boolean }) {
